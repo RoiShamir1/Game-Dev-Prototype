@@ -7,6 +7,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] float sprintMod = 1.5f;
     [SerializeField] float speed;
     [SerializeField] float jumpSpeed;
+    [SerializeField] Transform flashlight;
     bool isGrounded = true;
     float directionX;
     Animator animator;
@@ -36,11 +37,6 @@ public class PlayerMovement : MonoBehaviour
     private void OnSprintStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
     {
         speed *= sprintMod;
-    }
-
-    private void OnChangeColorPerformed(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
-    {
-        sprite.color = UnityEngine.Random.ColorHSV();
     }
 
     private void OnJumpPerformed(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
@@ -105,7 +101,12 @@ public class PlayerMovement : MonoBehaviour
     {
         animator.SetFloat("Speed", rb.linearVelocity.x);
         if (directionX != 0)
-            sprite.flipX = directionX < 0;
+        {
+            bool faceLeft = directionX < 0;
+            sprite.flipX = faceLeft;
+            if (flashlight != null)
+                flashlight.localRotation = Quaternion.Euler(0f, faceLeft ? 180f : 0f, 0f);
+        }
     }
 
     private void OnDisable()
