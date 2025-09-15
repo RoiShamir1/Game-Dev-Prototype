@@ -8,7 +8,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] float speed;
     [SerializeField] float jumpSpeed;
     [SerializeField] Transform flashlight;
-    bool isGrounded = true;
+    [SerializeField] bool isGrounded = true;
     float directionX;
     Animator animator;
     SpriteRenderer sprite;
