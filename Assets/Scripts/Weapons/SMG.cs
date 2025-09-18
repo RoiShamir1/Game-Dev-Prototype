@@ -8,26 +8,29 @@ public class SMG : Weapon
 
     private float nextFireTime = 0f;
 
-    void Update()
-    {
-        if (Input.GetButton("Fire1") && Time.time >= nextFireTime)
-        {
-            Shoot();
-            nextFireTime = Time.time + fireRate;
-        }
-    }
     public override void Shoot()
     {
-        if (bulletPrefab == null || firePoint == null) return;
+        if (Time.time < nextFireTime) return;
+        nextFireTime = Time.time + fireRate;
+
+        if (bulletPrefab == null || firePoint == null)
+        {
+            Debug.LogWarning("SMG missing bulletPrefab or firePoint!");
+            return;
+        }
 
         for (int i = 0; i < bulletsPerShot; i++)
         {
             float angle = Random.Range(-spreadAngle, spreadAngle);
-            Quaternion rotation = firePoint.rotation * Quaternion.Euler(0, 0, angle);
+            Quaternion rot = firePoint.rotation * Quaternion.Euler(0, 0, angle);
 
-            GameObject bullet = Instantiate(bulletPrefab, firePoint.position, rotation);
+            GameObject bullet = Instantiate(bulletPrefab, firePoint.position, rot);
             Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
-            rb.AddForce(rotation * Vector3.right * bulletForce, ForceMode2D.Impulse);
+            if (rb != null)
+            {
+                rb.AddForce((Vector2)(rot * Vector3.right) * bulletForce, ForceMode2D.Impulse);
+                // ае: rb.velocity = (Vector2)(rot * Vector3.right) * bulletForce;
+            }
         }
 
         Debug.Log("SMG burst fired!");

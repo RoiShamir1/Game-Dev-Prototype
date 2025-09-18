@@ -8,13 +8,24 @@ public abstract class Weapon : MonoBehaviour
 
     public virtual void Shoot()
     {
-        if (bulletPrefab == null || firePoint == null) return;
+        Debug.Log("Bang! Shooting from: " + gameObject.name);
+
+        if (bulletPrefab == null || firePoint == null)
+        {
+            Debug.LogWarning($"{name}: bulletPrefab or firePoint not assigned.");
+            return;
+        }
 
         GameObject bullet = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
         Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
         if (rb != null)
         {
-            rb.AddForce(firePoint.right * bulletForce, ForceMode2D.Impulse);
+            rb.AddForce((Vector2)firePoint.right * bulletForce, ForceMode2D.Impulse);
+            // חלופה חדה יותר: rb.velocity = (Vector2)firePoint.right * bulletForce;
+        }
+        else
+        {
+            Debug.LogWarning($"{name}: Bullet prefab missing Rigidbody2D.");
         }
     }
 }

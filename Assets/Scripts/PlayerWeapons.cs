@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerWeapons : MonoBehaviour
 {
@@ -9,37 +10,43 @@ public class PlayerWeapons : MonoBehaviour
 
     void Start()
     {
-        if (weapons.Count > 0)
+        if (weapons == null || weapons.Count == 0)
         {
-            EquipWeapon(0);
+            Debug.LogWarning("No weapons assigned to PlayerWeapons.");
+            return;
         }
+        EquipWeapon(0);
     }
 
     void Update()
     {
-        if (Input.GetButtonDown("Fire1") && currentWeapon != null)
+        if (Mouse.current == null) return;
+
+        if (Mouse.current.leftButton.isPressed && currentWeapon != null)
         {
             currentWeapon.Shoot();
         }
 
-        if (Input.GetKeyDown(KeyCode.Alpha1)) EquipWeapon(0);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) EquipWeapon(1);
-        if (Input.GetKeyDown(KeyCode.Alpha3)) EquipWeapon(2);
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.digit1Key.wasPressedThisFrame) EquipWeapon(0);
+            if (Keyboard.current.digit2Key.wasPressedThisFrame) EquipWeapon(1);
+            if (Keyboard.current.digit3Key.wasPressedThisFrame) EquipWeapon(2);
+        }
     }
 
     void EquipWeapon(int index)
     {
-        if (index < 0 || index >= weapons.Count) return;
+        if (weapons == null || index < 0 || index >= weapons.Count) return;
 
-        foreach (var weapon in weapons)
+        for (int i = 0; i < weapons.Count; i++)
         {
-            weapon.gameObject.SetActive(false);
+            var go = weapons[i]?.gameObject;
+            if (go != null) go.SetActive(i == index);
         }
 
-        weapons[index].gameObject.SetActive(true);
         currentWeapon = weapons[index];
         currentWeaponIndex = index;
-
-        Debug.Log("Equipped: " + currentWeapon.name);
+        Debug.Log("Equipped: " + (currentWeapon ? currentWeapon.name : "NULL"));
     }
 }
