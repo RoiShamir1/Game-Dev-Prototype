@@ -22,7 +22,7 @@ public class PlayerWeapons : MonoBehaviour
     {
         if (Mouse.current == null) return;
 
-        if (Mouse.current.leftButton.isPressed && currentWeapon != null)
+        if (Mouse.current.leftButton.wasPressedThisFrame && currentWeapon != null)
         {
             currentWeapon.Shoot();
         }
