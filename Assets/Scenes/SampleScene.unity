@@ -847,12 +847,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3cdeedbcc58533a42a506417c97e1c96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bulletPrefab: {fileID: 8983504148749103710, guid: 7c27ba7e9d2b2444b9acb225c9f7386d, type: 3}
+  data: {fileID: 0}
   firePoint: {fileID: 11264272}
-  bulletForce: 10
-  fireRate: 0.1
-  bulletsPerShot: 3
-  spreadAngle: 5
+  OnWeaponFired: {fileID: 0}
 --- !u!212 &483731745
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -3088,9 +3085,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95f7393f9f2cd90459223f177a4be727, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bulletPrefab: {fileID: 8983504148749103710, guid: 7c27ba7e9d2b2444b9acb225c9f7386d, type: 3}
+  data: {fileID: 0}
   firePoint: {fileID: 572937247}
-  bulletForce: 10
+  OnWeaponFired: {fileID: 0}
 --- !u!212 &1211865359
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -3927,15 +3924,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2c3534381fbad94cb1c16ea495780af, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  sprintMod: 1.5
+  speed: 10
+  jumpSpeed: 12
   groundCheck: {fileID: 1416545565}
+  groundCheckRadius: 0.2
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
-  groundCheckRadius: 0.2
-  speed: 10
-  jumpSpeed: 12
-  sprintMod: 1.5
-  flashlight: {fileID: 1414003329}
+  weaponHolder: {fileID: 0}
+  weapons: []
+  startWeaponIndex: 0
 --- !u!95 &1414003333
 Animator:
   serializedVersion: 7
@@ -4015,9 +4014,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19ffc8f18ce94c94c954f08cf0e60a79, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  weapons:
-  - {fileID: 1211865358}
-  - {fileID: 483731744}
 --- !u!114 &1414003336
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4030,8 +4026,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37ec1e726208273469ab1ced74416022, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 3
-  destroyOnDeath: 1
 --- !u!1 &1416545564
 GameObject:
   m_ObjectHideFlags: 0
@@ -4294,7 +4288,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -855, y: 504}
+  m_AnchoredPosition: {x: -815.5, y: 482}
   m_SizeDelta: {x: 160, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1508141952
@@ -4449,8 +4443,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37ec1e726208273469ab1ced74416022, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 3
-  destroyOnDeath: 1
 --- !u!61 &1665884893
 BoxCollider2D:
   m_ObjectHideFlags: 0
