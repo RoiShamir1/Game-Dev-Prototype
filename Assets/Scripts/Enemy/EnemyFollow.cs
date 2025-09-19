@@ -4,40 +4,31 @@ public class EnemyFollow : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] float speed = 2f;
-    [SerializeField] float jumpVelocity = 5f;
 
-    [Header("Checks")]
-    [SerializeField] Transform groundCheck;
-    [SerializeField] float groundCheckRadius = 0.12f;
-    [SerializeField] LayerMask groundLayer;
+    [Header("Wall Stop")]
+    [SerializeField] Transform wallCheck;         
+    [SerializeField] LayerMask groundWalls;       
+    [SerializeField] float wallCheckDistance = 0.08f;
+    [SerializeField] float wallNormalThreshold = 0.7f;
 
-    [SerializeField] Transform wallCheck;
-    [SerializeField] float wallDetectDistance = 0.4f;
-    [SerializeField] LayerMask wallLayer;
-
-    [Header("Animation")]
-    [SerializeField] Animator animator;
-
-    [Header("Debug")]
-    [SerializeField] bool showDebugLogs = false;
-    [SerializeField] bool drawGizmos = true;
-
-    [SerializeField] float jumpCooldown = 0.2f;
-    float nextJumpTime = 0f;
-
-    Rigidbody2D rb;
     Transform player;
     Vector3 baseScale;
+    Rigidbody2D rb;
 
-    private int moveIntent = 0; // -1 = שמאלה, 1 = ימינה
+    Animator animator;
+    float lastX;
 
     void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
         baseScale = transform.localScale;
 
-        if (animator == null)
-            animator = GetComponent<Animator>();
+        rb = GetComponent<Rigidbody2D>();
+        if (rb) rb.freezeRotation = true;
+
+        animator = GetComponent<Animator>();
+        if (!animator) animator = GetComponentInChildren<Animator>();
+
+        lastX = transform.position.x;
     }
 
     void Start()
@@ -46,64 +37,59 @@ public class EnemyFollow : MonoBehaviour
         if (p) player = p.transform;
     }
 
-    void Update()
-    {
-        if (!player) return;
-
-        // קביעת כיוון רצוי (intent)
-        moveIntent = player.position.x < transform.position.x ? -1 : 1;
-
-        // סיבוב האויב לפי כיוון
-        transform.localScale = new Vector3(Mathf.Abs(baseScale.x) * moveIntent, baseScale.y, baseScale.z);
-    }
-
     void FixedUpdate()
     {
         if (!player) return;
 
-        bool isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        float sign = Mathf.Sign(player.position.x - transform.position.x);
+        Vector2 dir = new Vector2(sign, 0f);
 
-        Vector2 origin = wallCheck != null ? (Vector2)wallCheck.position : (Vector2)transform.position;
-        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.right * moveIntent, wallDetectDistance, wallLayer);
-        bool isWall = hit.collider != null;
-
-        // תנועה מול קיר
-        float targetVelocityX = !isWall ? moveIntent * speed : 0f;
-        rb.linearVelocity = new Vector2(targetVelocityX, rb.linearVelocity.y);
-
-        // קפיצה מעל קיר קטן
-        if (isWall && isGrounded && Time.time >= nextJumpTime)
+        bool wallAhead = false;
+        if (wallCheck)
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpVelocity);
-            nextJumpTime = Time.time + jumpCooldown;
-
-            if (animator != null)
-                animator.SetTrigger("IsJumping");
+            var hit = Physics2D.Raycast(wallCheck.position, dir, wallCheckDistance, groundWalls);
+            if (hit.collider != null && Mathf.Abs(hit.normal.x) > wallNormalThreshold)
+                wallAhead = true;
         }
 
-        // עדכון אנימציה לפי כוונה ללכת (moveIntent) ולא לפי מהירות פיזית
-        if (animator != null)
+
+        float vxCmd = wallAhead ? 0f : sign * speed;
+
+        if (rb && rb.bodyType == RigidbodyType2D.Dynamic)
         {
-            animator.SetFloat("Speed", Mathf.Abs(moveIntent));
+            rb.linearVelocity = new Vector2(vxCmd, rb.linearVelocity.y);
+        }
+        else
+        {
+            transform.position += new Vector3(vxCmd * Time.fixedDeltaTime, 0f, 0f);
+        }
+
+        var s = transform.localScale;
+        s.x = Mathf.Abs(baseScale.x) * (sign >= 0 ? 1f : -1f);
+        transform.localScale = s;
+
+        float vxActual = (rb && rb.bodyType == RigidbodyType2D.Dynamic)
+                         ? rb.linearVelocity.x
+                         : (transform.position.x - lastX) / Time.fixedDeltaTime;
+        lastX = transform.position.x;
+
+        bool movingCmd = Mathf.Abs(vxCmd) > 0.01f;
+        bool movingNow = Mathf.Abs(vxActual) > 0.05f;
+        bool isMoving = movingCmd || movingNow;
+
+        if (animator)
+        {
+            animator.SetFloat("Speed", Mathf.Abs(vxActual), 0.1f, Time.fixedDeltaTime); // החלקה קלה
+            animator.SetBool("isMoving", isMoving);
         }
     }
 
     void OnDrawGizmosSelected()
     {
-        if (!drawGizmos) return;
-
-        if (groundCheck != null)
+        if (wallCheck)
         {
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
-        }
-
-        if (wallCheck != null)
-        {
-            float dir = transform.localScale.x < 0 ? -1f : 1f;
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(wallCheck.position, 0.1f);
-            Gizmos.DrawLine(wallCheck.position, wallCheck.position + Vector3.right * dir * wallDetectDistance);
+            float sign = Mathf.Sign(transform.localScale.x);
+            Gizmos.DrawLine(wallCheck.position, wallCheck.position + Vector3.right * sign * wallCheckDistance);
         }
     }
 }
