@@ -3532,13 +3532,41 @@ PrefabInstance:
       propertyPath: m_LocalPosition.x
       value: -19.15
       objectReference: {fileID: 0}
+    - target: {fileID: 6787474283096498066, guid: 7c27ba7e9d2b2444b9acb225c9f7386d, type: 3}
+      propertyPath: m_Size.x
+      value: 1.7856216
+      objectReference: {fileID: 0}
+    - target: {fileID: 6787474283096498066, guid: 7c27ba7e9d2b2444b9acb225c9f7386d, type: 3}
+      propertyPath: m_Size.y
+      value: 0.5739531
+      objectReference: {fileID: 0}
+    - target: {fileID: 6787474283096498066, guid: 7c27ba7e9d2b2444b9acb225c9f7386d, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6787474283096498066, guid: 7c27ba7e9d2b2444b9acb225c9f7386d, type: 3}
+      propertyPath: m_Offset.x
+      value: -0.03143692
+      objectReference: {fileID: 0}
+    - target: {fileID: 6787474283096498066, guid: 7c27ba7e9d2b2444b9acb225c9f7386d, type: 3}
+      propertyPath: m_Offset.y
+      value: 0.0013669431
+      objectReference: {fileID: 0}
     - target: {fileID: 7505228745110784772, guid: 7c27ba7e9d2b2444b9acb225c9f7386d, type: 3}
       propertyPath: m_GravityScale
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7505228745110784772, guid: 7c27ba7e9d2b2444b9acb225c9f7386d, type: 3}
+      propertyPath: m_CollisionDetection
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8983504148749103710, guid: 7c27ba7e9d2b2444b9acb225c9f7386d, type: 3}
       propertyPath: m_Name
       value: Bullet
+      objectReference: {fileID: 0}
+    - target: {fileID: 8983504148749103710, guid: 7c27ba7e9d2b2444b9acb225c9f7386d, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
