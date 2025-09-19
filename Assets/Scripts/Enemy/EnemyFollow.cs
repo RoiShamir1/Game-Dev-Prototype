@@ -2,24 +2,42 @@ using UnityEngine;
 
 public class EnemyFollow : MonoBehaviour
 {
-    [Header("Move")]
+    [Header("Movement")]
     [SerializeField] float speed = 2f;
+    [SerializeField] float jumpVelocity = 5f;
 
-    [Header("Detect")]
-    [SerializeField] Transform wallCheck;        // גרור לפה את ה-child
-    [SerializeField] LayerMask groundWalls;      // הרצפה/קירות
-    [SerializeField] float wallCheckDistance = 0.06f; // כמה קדימה לבדוק
-    [SerializeField] float wallNormalThreshold = 0.7f; // כמה אנכי נחשב "קיר"
+    [Header("Checks")]
+    [SerializeField] Transform groundCheck;
+    [SerializeField] float groundCheckRadius = 0.12f;
+    [SerializeField] LayerMask groundLayer;
+
+    [SerializeField] Transform wallCheck;
+    [SerializeField] float wallDetectDistance = 0.4f;
+    [SerializeField] LayerMask wallLayer;
+
+    [Header("Animation")]
+    [SerializeField] Animator animator;
+
+    [Header("Debug")]
+    [SerializeField] bool showDebugLogs = false;
+    [SerializeField] bool drawGizmos = true;
+
+    [SerializeField] float jumpCooldown = 0.2f;
+    float nextJumpTime = 0f;
 
     Rigidbody2D rb;
     Transform player;
     Vector3 baseScale;
 
+    private int moveIntent = 0; // -1 = שמאלה, 1 = ימינה
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         baseScale = transform.localScale;
-        if (rb) rb.freezeRotation = true;
+
+        if (animator == null)
+            animator = GetComponent<Animator>();
     }
 
     void Start()
@@ -28,39 +46,64 @@ public class EnemyFollow : MonoBehaviour
         if (p) player = p.transform;
     }
 
+    void Update()
+    {
+        if (!player) return;
+
+        // קביעת כיוון רצוי (intent)
+        moveIntent = player.position.x < transform.position.x ? -1 : 1;
+
+        // סיבוב האויב לפי כיוון
+        transform.localScale = new Vector3(Mathf.Abs(baseScale.x) * moveIntent, baseScale.y, baseScale.z);
+    }
+
     void FixedUpdate()
     {
         if (!player) return;
 
-        // כיוון אופקי לכיוון השחקן
-        float sign = Mathf.Sign(player.position.x - transform.position.x);
-        Vector2 dir = new Vector2(sign, 0f);
+        bool isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
 
-        // בדיקת "קיר" מול הפנים
-        bool wallAhead = false;
-        if (wallCheck)
+        Vector2 origin = wallCheck != null ? (Vector2)wallCheck.position : (Vector2)transform.position;
+        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.right * moveIntent, wallDetectDistance, wallLayer);
+        bool isWall = hit.collider != null;
+
+        // תנועה מול קיר
+        float targetVelocityX = !isWall ? moveIntent * speed : 0f;
+        rb.linearVelocity = new Vector2(targetVelocityX, rb.linearVelocity.y);
+
+        // קפיצה מעל קיר קטן
+        if (isWall && isGrounded && Time.time >= nextJumpTime)
         {
-            var hit = Physics2D.Raycast(wallCheck.position, dir, wallCheckDistance, groundWalls);
-            if (hit.collider != null && Mathf.Abs(hit.normal.x) > wallNormalThreshold)
-                wallAhead = true; // פגיעה כמעט-אנכית = קיר/בליטה
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpVelocity);
+            nextJumpTime = Time.time + jumpCooldown;
+
+            if (animator != null)
+                animator.SetTrigger("IsJumping");
         }
 
-        float vx = wallAhead ? 0f : sign * speed;
-
-        if (rb && rb.bodyType == RigidbodyType2D.Dynamic)
-            rb.linearVelocity = new Vector2(vx, rb.linearVelocity.y);
-        else
-            transform.position += new Vector3(vx * Time.fixedDeltaTime, 0f, 0f);
-
-        // הפיכת הספרייט לכיוון התנועה
-        var s = transform.localScale;
-        s.x = Mathf.Abs(baseScale.x) * (sign >= 0 ? 1f : -1f);
-        transform.localScale = s;
+        // עדכון אנימציה לפי כוונה ללכת (moveIntent) ולא לפי מהירות פיזית
+        if (animator != null)
+        {
+            animator.SetFloat("Speed", Mathf.Abs(moveIntent));
+        }
     }
 
     void OnDrawGizmosSelected()
     {
-        if (wallCheck)
-            Gizmos.DrawLine(wallCheck.position, wallCheck.position + Vector3.right * Mathf.Sign(transform.localScale.x) * wallCheckDistance);
+        if (!drawGizmos) return;
+
+        if (groundCheck != null)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        }
+
+        if (wallCheck != null)
+        {
+            float dir = transform.localScale.x < 0 ? -1f : 1f;
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(wallCheck.position, 0.1f);
+            Gizmos.DrawLine(wallCheck.position, wallCheck.position + Vector3.right * dir * wallDetectDistance);
+        }
     }
 }
