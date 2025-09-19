@@ -1,126 +1,197 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
-    [Header("Ground Check")]
-    [SerializeField] private Transform groundCheck;
-    [SerializeField] private LayerMask groundLayer; 
-    [SerializeField] private float groundCheckRadius = 0.2f;
 
-    [Header("Movement")]
-    [SerializeField] private float speed;
-    [SerializeField] private float jumpSpeed;
-    [SerializeField] private float sprintMod = 1.5f;
+    Rigidbody2D rb;
+    [SerializeField] float sprintMod = 1.5f;
+    [SerializeField] float speed = 6f;
+    [SerializeField] float jumpSpeed = 12f;
+    bool isGrounded = true;
+    float directionX;
+    Animator animator;
+    SpriteRenderer sprite;
 
-    [Header("Components")]
-    [SerializeField] private Transform flashlight;
+    InputSystem inputActions;
 
-    private Rigidbody2D rb;
-    private Animator animator;
-    private SpriteRenderer sprite;
-    private InputSystem inputActions;
-    private float directionX;
-    private bool isGrounded; 
+    [SerializeField] Transform groundCheck;
+    [SerializeField] float groundCheckRadius = 0.15f;
+    [SerializeField] LayerMask groundLayer = ~0;
 
-    private void Awake()
+    [Header("Weapons")]
+    [SerializeField] Transform weaponHolder;              
+    [SerializeField] List<Weapon> weapons = new();        
+    [SerializeField] int startWeaponIndex = 0;
+
+    int currentWeaponIndex = -1;
+    Weapon currentWeapon;
+
+    bool isFiring;
+    float nextShotTime;
+
+    void Awake()
     {
-        inputActions = new();
+        inputActions = new InputSystem();
+        if (!weaponHolder) weaponHolder = transform.Find("WeaponHolder");
     }
 
-    void Start()
-    {
-        rb = GetComponent<Rigidbody2D>();
-        ValidateComponent(rb, nameof(rb));
-        animator = GetComponent<Animator>();
-        ValidateComponent(animator, nameof(animator));
-        sprite = GetComponent<SpriteRenderer>();
-        ValidateComponent(sprite, nameof(sprite));
-    }
-
-    private void OnEnable()
+    void OnEnable()
     {
         inputActions.Player.Enable();
+
         inputActions.Player.Move.performed += OnMovePerformed;
         inputActions.Player.Move.canceled += OnMoveCanceled;
         inputActions.Player.Jump.performed += OnJumpPerformed;
         inputActions.Player.Sprint.started += OnSprintStarted;
         inputActions.Player.Sprint.canceled += OnSprintCanceled;
+
+        inputActions.Player.Fire.started += OnFireStarted;
+        inputActions.Player.Fire.canceled += OnFireCanceled;
+
+        inputActions.Player.Next.performed += OnNextWeaponPerformed;
+        inputActions.Player.Previous.performed += OnPrevWeaponPerformed;
+
+        rb = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
+        sprite = GetComponent<SpriteRenderer>();
+
+        if (weapons == null || weapons.Count == 0)
+            weapons = GetComponentsInChildren<Weapon>(true).ToList();
+
+        for (int i = 0; i < weapons.Count; i++)
+            if (weapons[i]) weapons[i].gameObject.SetActive(false);
+
+        EquipWeapon(Mathf.Clamp(startWeaponIndex, 0, Mathf.Max(0, weapons.Count - 1)));
     }
 
-    void Update()
+    void OnDisable()
     {
-        HandleMovementAnimations();
-    }
-
-    private void FixedUpdate()
-    {
-        CheckIfGrounded();
-        HandleMovement();
-        Debug.Log("Is the player grounded? " + isGrounded);
-    }
-
-    private void CheckIfGrounded()
-    {
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
-        //animator.SetBool("IsGrounded", isGrounded);
-    }
-
-    private void HandleMovement()
-    {
-        rb.linearVelocity = new Vector2(directionX * speed, rb.linearVelocity.y);
-    }
-
-    private void HandleJump()
-    {
-        if (isGrounded)
-        {
-            animator.SetTrigger("IsJumping");
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); 
-            rb.AddForce(Vector2.up * jumpSpeed, ForceMode2D.Impulse);
-        }
-    }
-
-    private void HandleMovementAnimations()
-    {
-        animator.SetFloat("Speed", Mathf.Abs(directionX * speed));
-
-        if (directionX != 0)
-        {
-            bool faceLeft = directionX < 0;
-            sprite.flipX = faceLeft;
-            if (flashlight != null)
-                flashlight.localRotation = Quaternion.Euler(0f, faceLeft ? 180f : 0f, 0f);
-        }
-    }
-
-    private void OnJumpPerformed(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
-    {
-        HandleJump();
-    }
-
-    private void OnSprintCanceled(UnityEngine.InputSystem.InputAction.CallbackContext ctx) => speed /= sprintMod;
-    private void OnSprintStarted(UnityEngine.InputSystem.InputAction.CallbackContext ctx) => speed *= sprintMod;
-    private void OnMoveCanceled(UnityEngine.InputSystem.InputAction.CallbackContext ctx) => directionX = 0;
-    private void OnMovePerformed(UnityEngine.InputSystem.InputAction.CallbackContext ctx) => directionX = ctx.ReadValue<Vector2>().x;
-
-    private void ValidateComponent<T>(T component, string name)
-    {
-        if (component is null) Debug.LogError($"{name} is null!");
-    }
-
-    private void OnDisable()
-    {
-        inputActions.Player.Disable();
         inputActions.Player.Move.performed -= OnMovePerformed;
         inputActions.Player.Move.canceled -= OnMoveCanceled;
         inputActions.Player.Jump.performed -= OnJumpPerformed;
         inputActions.Player.Sprint.started -= OnSprintStarted;
         inputActions.Player.Sprint.canceled -= OnSprintCanceled;
+
+        inputActions.Player.Fire.started -= OnFireStarted;
+        inputActions.Player.Fire.canceled -= OnFireCanceled;
+
+        inputActions.Player.Next.performed -= OnNextWeaponPerformed;
+        inputActions.Player.Previous.performed -= OnPrevWeaponPerformed;
+
+        inputActions.Player.Disable();
     }
-    private void OnDrawGizmosSelected()
+
+    void OnMovePerformed(InputAction.CallbackContext ctx) => directionX = ctx.ReadValue<Vector2>().x;
+    void OnMoveCanceled(InputAction.CallbackContext ctx) => directionX = 0f;
+    void OnJumpPerformed(InputAction.CallbackContext ctx)
     {
-        if (groundCheck == null) return;
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        if (!IsGroundedCircle()) return;
+        HandleJump();
+    }
+    void OnSprintStarted(InputAction.CallbackContext ctx) => speed *= sprintMod;
+    void OnSprintCanceled(InputAction.CallbackContext ctx) => speed /= sprintMod;
+
+    void OnFireStarted(InputAction.CallbackContext _)
+    {
+        isFiring = true;
+        TryShoot();          
+    }
+    void OnFireCanceled(InputAction.CallbackContext _) => isFiring = false;
+
+    void OnNextWeaponPerformed(InputAction.CallbackContext _) => NextWeapon();
+    void OnPrevWeaponPerformed(InputAction.CallbackContext _) => PrevWeapon();
+
+    void Update()
+    {
+        isGrounded = IsGroundedCircle();
+
+        if (Mathf.Abs(directionX) > 0.01f)
+        {
+            bool facingLeft = directionX < 0f;
+            if (sprite) sprite.flipX = facingLeft;
+            if (weaponHolder)
+                weaponHolder.localRotation = facingLeft ? Quaternion.Euler(0, 180, 0) : Quaternion.identity;
+        }
+
+        if (animator)
+        {
+            animator.SetFloat("Speed", rb ? rb.linearVelocity.x : 0f);
+            animator.SetBool("isGrounded", isGrounded);
+        }
+
+        if (isFiring && currentWeapon && currentWeapon.data && currentWeapon.data.autoFire)
+            TryShoot();
+    }
+
+    void FixedUpdate()
+    {
+        if (!rb) return;
+        var v = rb.linearVelocity;
+        v.x = directionX * speed;
+        rb.linearVelocity = v;
+    }
+
+    void HandleJump()
+    {
+        isGrounded = false;
+        if (animator) animator.SetTrigger("IsJumping");
+        if (rb) rb.AddForce(Vector2.up * jumpSpeed, ForceMode2D.Impulse);
+    }
+
+    bool IsGroundedCircle()
+    {
+        if (!groundCheck) return false;
+        return Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer) != null;
+    }
+
+#if UNITY_EDITOR
+    void OnDrawGizmosSelected()
+    {
+        if (groundCheck)
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        }
+    }
+#endif
+
+    void EquipWeapon(int index)
+    {
+        if (weapons == null || weapons.Count == 0) { currentWeaponIndex = -1; currentWeapon = null; return; }
+        if (index < 0 || index >= weapons.Count) return;
+
+        if (currentWeaponIndex >= 0 && currentWeaponIndex < weapons.Count && weapons[currentWeaponIndex])
+            weapons[currentWeaponIndex].gameObject.SetActive(false);
+
+        currentWeaponIndex = index;
+        currentWeapon = weapons[currentWeaponIndex];
+        if (currentWeapon) currentWeapon.gameObject.SetActive(true);
+
+        nextShotTime = 0f;
+    }
+
+    void NextWeapon()
+    {
+        if (weapons == null || weapons.Count <= 1) return;
+        EquipWeapon((currentWeaponIndex + 1) % weapons.Count);
+    }
+    void PrevWeapon()
+    {
+        if (weapons == null || weapons.Count <= 1) return;
+        EquipWeapon((currentWeaponIndex - 1 + weapons.Count) % weapons.Count);
+    }
+
+    void TryShoot()
+    {
+        if (!currentWeapon) return;
+
+        float rate = (currentWeapon.data != null) ? Mathf.Max(0.05f, currentWeapon.data.fireRate) : 0.25f;
+        if (Time.time < nextShotTime) return;
+
+        currentWeapon.Shoot();
+        nextShotTime = Time.time + rate;
     }
 }
