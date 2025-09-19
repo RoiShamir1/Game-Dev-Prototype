@@ -16,10 +16,8 @@ public class Bullet : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.gameObject.layer == LayerMask.NameToLayer("Enemy")
-            || other.GetComponentInParent<EnemyFollow>() != null)
-        {
+        if (other.gameObject.layer == LayerMask.NameToLayer("Enemy"))
             Destroy(gameObject);
-        }
+        
     }
 }
