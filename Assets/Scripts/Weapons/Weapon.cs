@@ -20,8 +20,7 @@ public abstract class Weapon : MonoBehaviour
         Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
         if (rb != null)
         {
-            //rb.AddForce((Vector2)firePoint.right * bulletForce, ForceMode2D.Impulse);
-            rb.linearVelocity = (Vector2)firePoint.right * bulletForce; // חלופה חדה יותר
+            rb.linearVelocity = (Vector2)firePoint.right * bulletForce;
         }
         else
         {

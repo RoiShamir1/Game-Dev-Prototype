@@ -8,7 +8,7 @@ public class EnemyFollow : MonoBehaviour
 
     void Awake()
     {
-        baseScale = transform.localScale; 
+        baseScale = transform.localScale;
     }
 
     void Start()

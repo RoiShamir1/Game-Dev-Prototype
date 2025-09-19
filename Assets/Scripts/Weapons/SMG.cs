@@ -28,8 +28,7 @@ public class SMG : Weapon
             Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
             if (rb != null)
             {
-                rb.AddForce((Vector2)(rot * Vector3.right) * bulletForce, ForceMode2D.Impulse);
-                // ае: rb.velocity = (Vector2)(rot * Vector3.right) * bulletForce;
+                rb.linearVelocity = (Vector2)(rot * Vector3.right) * bulletForce;
             }
         }
 
