@@ -19,7 +19,7 @@ public class BulletDamage : MonoBehaviour
     {
         if (!col.CompareTag(playerTag)) return;
 
-        // לחפש את קומפוננטת ה-Health על השחקן
+     
         var health = col.GetComponentInParent<Health>();
         if (health != null)
         {
@@ -27,7 +27,7 @@ public class BulletDamage : MonoBehaviour
             Debug.Log($"[BulletDamage] {name} hit {col.name}, damage={damage}");
         }
 
-        // הכדור נעלם אחרי פגיעה
+    
         Destroy(gameObject);
     }
 }

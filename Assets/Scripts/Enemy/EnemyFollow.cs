@@ -79,7 +79,7 @@ public class EnemyFollow : MonoBehaviour
 
         if (animator)
         {
-            animator.SetFloat("Speed", Mathf.Abs(vxActual), 0.1f, Time.fixedDeltaTime); // החלקה קלה
+            animator.SetFloat("Speed", Mathf.Abs(vxActual), 0.1f, Time.fixedDeltaTime);
             animator.SetBool("isMoving", isMoving);
         }
     }
