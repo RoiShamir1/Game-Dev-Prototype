@@ -1174,6 +1174,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: 8692274848534405435, guid: 84f033e3414067e4ebadda491cee88f6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 2.63
+      objectReference: {fileID: 0}
     - target: {fileID: 8923792727488394467, guid: 84f033e3414067e4ebadda491cee88f6, type: 3}
       propertyPath: m_LocalRotation.w
       value: -0.047622308
@@ -3419,7 +3423,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af60a7c9b073b5c4b8b2a348286ec0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 3
+  maxHealth: 30
   destroyOnDeath: 1
 --- !u!1 &1211148674
 GameObject:
