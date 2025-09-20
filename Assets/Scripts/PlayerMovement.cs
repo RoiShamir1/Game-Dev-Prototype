@@ -6,29 +6,42 @@ using UnityEngine.InputSystem;
 public class PlayerMovement : MonoBehaviour
 {
 
+    private const float DIRECTION_DEADZONE = 0.01f;
+    private const float ENEMY_TOP_NORMAL_Y = 0.70f;
+    private const float MIN_FIRE_RATE = 0.05f;
+    private const float FALLBACK_FIRE_RATE = 0.25f;
+
     Rigidbody2D rb;
+
+    [Header("Movement")]
     [SerializeField] float sprintMod = 1.5f;
-    [SerializeField] float speed = 6f;
+    [SerializeField] float speed = 10f;
     [SerializeField] float jumpSpeed = 12f;
+
     bool isGrounded = true;
     float directionX;
+
     Animator animator;
     SpriteRenderer sprite;
-
     InputSystem inputActions;
 
+    [Header("Ground Check")]
     [SerializeField] Transform groundCheck;
     [SerializeField] float groundCheckRadius = 0.15f;
     [SerializeField] LayerMask groundLayer = ~0;
 
+    [Header("Enemy Standing (Coyote Time)")]
+    [SerializeField] LayerMask enemyLayer;
+    [SerializeField] float onEnemyCoyoteTime = 0.12f;
+    float onEnemyTopTimer;
+
     [Header("Weapons")]
-    [SerializeField] Transform weaponHolder;              
-    [SerializeField] List<Weapon> weapons = new();        
+    [SerializeField] Transform weaponHolder;
+    [SerializeField] List<Weapon> weapons = new();
     [SerializeField] int startWeaponIndex = 0;
 
     int currentWeaponIndex = -1;
     Weapon currentWeapon;
-
     bool isFiring;
     float nextShotTime;
 
@@ -86,20 +99,19 @@ public class PlayerMovement : MonoBehaviour
 
     void OnMovePerformed(InputAction.CallbackContext ctx) => directionX = ctx.ReadValue<Vector2>().x;
     void OnMoveCanceled(InputAction.CallbackContext ctx) => directionX = 0f;
+
     void OnJumpPerformed(InputAction.CallbackContext ctx)
     {
-        if (!IsGroundedCircle()) return;
+        if (!(IsGroundedCircle() || onEnemyTopTimer > 0f)) return;
         HandleJump();
+        onEnemyTopTimer = 0f;
     }
+
     void OnSprintStarted(InputAction.CallbackContext ctx) => speed *= sprintMod;
     void OnSprintCanceled(InputAction.CallbackContext ctx) => speed /= sprintMod;
 
-    void OnFireStarted(InputAction.CallbackContext _)
-    {
-        isFiring = true;
-        TryShoot();          
-    }
-    void OnFireCanceled(InputAction.CallbackContext _) => isFiring = false;
+    void OnFireStarted(InputAction.CallbackContext _) { isFiring = true; TryShoot(); }
+    void OnFireCanceled(InputAction.CallbackContext _) { isFiring = false; }
 
     void OnNextWeaponPerformed(InputAction.CallbackContext _) => NextWeapon();
     void OnPrevWeaponPerformed(InputAction.CallbackContext _) => PrevWeapon();
@@ -108,7 +120,10 @@ public class PlayerMovement : MonoBehaviour
     {
         isGrounded = IsGroundedCircle();
 
-        if (Mathf.Abs(directionX) > 0.01f)
+        if (onEnemyTopTimer > 0f)
+            onEnemyTopTimer -= Time.deltaTime;
+
+        if (Mathf.Abs(directionX) > DIRECTION_DEADZONE)
         {
             bool facingLeft = directionX < 0f;
             if (sprite) sprite.flipX = facingLeft;
@@ -118,8 +133,8 @@ public class PlayerMovement : MonoBehaviour
 
         if (animator)
         {
-            animator.SetFloat("Speed", rb ? rb.linearVelocity.x : 0f);
-            animator.SetBool("isGrounded", isGrounded);
+            if (rb) animator.SetFloat("Speed", rb.linearVelocity.x);
+            animator.SetBool("isGrounded", isGrounded || onEnemyTopTimer > 0f);
         }
 
         if (isFiring && currentWeapon && currentWeapon.data && currentWeapon.data.autoFire)
@@ -188,10 +203,28 @@ public class PlayerMovement : MonoBehaviour
     {
         if (!currentWeapon) return;
 
-        float rate = (currentWeapon.data != null) ? Mathf.Max(0.05f, currentWeapon.data.fireRate) : 0.25f;
+        float rate = (currentWeapon.data != null)
+            ? Mathf.Max(MIN_FIRE_RATE, currentWeapon.data.fireRate)
+            : FALLBACK_FIRE_RATE;
+
         if (Time.time < nextShotTime) return;
 
         currentWeapon.Shoot();
         nextShotTime = Time.time + rate;
+    }
+
+    void OnCollisionStay2D(Collision2D c)
+    {
+        int lm = 1 << c.collider.gameObject.layer;
+        if ((enemyLayer.value & lm) == 0) return;
+
+        foreach (var ct in c.contacts)
+        {
+            if (ct.normal.y > ENEMY_TOP_NORMAL_Y)
+            {
+                onEnemyTopTimer = onEnemyCoyoteTime;
+                break;
+            }
+        }
     }
 }
