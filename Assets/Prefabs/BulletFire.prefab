@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4209564673010709289}
   - component: {fileID: 2418671167859696201}
-  m_Layer: 7
+  m_Layer: 10
   m_Name: EnemyHit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -92,7 +92,7 @@ GameObject:
   - component: {fileID: 9179962736955208425}
   - component: {fileID: 8457935560285119787}
   - component: {fileID: 4010766242841561493}
-  m_Layer: 7
+  m_Layer: 10
   m_Name: BulletFire
   m_TagString: Untagged
   m_Icon: {fileID: 0}

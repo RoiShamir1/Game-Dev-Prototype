@@ -41,6 +41,15 @@ public class EnemyShooting : MonoBehaviour
         }
     }
 
+    void OnTriggerStay2D(Collider2D other)
+    {
+        if (!other.CompareTag("Player")) return;
+
+        playerInRange = true;
+        if (player == null) player = other.transform;
+    }
+
+
     void ShootAtPlayer()
     {
         if (player == null || firePoint == null || bulletPrefab == null) return;
