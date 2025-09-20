@@ -14,20 +14,31 @@ public class Health : MonoBehaviour
     void Awake()
     {
         Current = maxHealth;
+        Debug.Log($"[Health] {name}: Init HP {Current}/{maxHealth}");
     }
 
     public bool ApplyDamage(int dmg)
     {
-        maxHealth = Mathf.Max(0, maxHealth - Mathf.Max(0, dmg));
-        return maxHealth == 0;
+        if (Current <= 0) return true;
+
+        int amount = Mathf.Max(0, dmg);
+        int before = Current;
+        Current = Mathf.Max(0, Current - amount);
+
+        Debug.Log($"[Health] {name}: -{amount} dmg, HP {Current}/{maxHealth} (was {before})");
+        OnHealthChanged?.Invoke(Current, maxHealth);
+
+        if (Current == 0)
+        {
+            Die();
+            return true;
+        }
+        return false;
     }
 
     public void TakeDamage(int amount)
     {
-        if (Current <= 0) return;
-        Current -= amount;
-        OnHealthChanged?.Invoke(Current, maxHealth);
-        if (Current <= 0) Die();
+        ApplyDamage(amount);
     }
 
     public void Kill()
@@ -40,7 +51,12 @@ public class Health : MonoBehaviour
 
     void Die()
     {
+        Debug.Log($"[Health] {name}: DIED");
         OnDied?.Invoke();
-        if (destroyOnDeath) Destroy(gameObject);
+        if (destroyOnDeath)
+        {
+            Destroy(gameObject);
+            Debug.Log($"[Health] {name}: Destroyed");
+        }
     }
 }
