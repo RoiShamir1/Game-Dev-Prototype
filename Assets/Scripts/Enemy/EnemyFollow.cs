@@ -11,8 +11,16 @@ public class EnemyFollow : MonoBehaviour
     [SerializeField] float wallCheckDistance = 0.08f;
     [SerializeField] float wallNormalThreshold = 0.7f;
 
-    [Header("X Deadzone (to prevent jitter when player is above)")]
-    [SerializeField] float stopDistanceX = 0.30f; // אם |dx| קטן מזה — לא זזים בכלל
+    [Header("Player X Deadzone")]
+    [SerializeField] float stopDistanceX = 0.30f;
+
+    [Header("Stop when player is not alive/active")]
+    [SerializeField] bool stopWhenPlayerNotAlive = true;
+
+    [Header("Thresholds & Animation")]
+    [SerializeField] float minCommandEpsilon = 0.01f;  
+    [SerializeField] float movingThreshold = 0.05f;    
+    [SerializeField] float animDamp = 0.10f;   
 
     Transform player;
     Vector3 baseScale;
@@ -32,12 +40,15 @@ public class EnemyFollow : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!player) return;
+        if (!player || (stopWhenPlayerNotAlive && !IsPlayerAlive()))
+        {
+            ApplyVelocity(0f);
+            UpdateFacingAndAnimation(0f);
+            return;
+        }
 
         float dx = player.position.x - transform.position.x;
-        float dy = player.position.y - transform.position.y;
 
-        // --- Deadzone בציר X: אם השחקן כמעט בדיוק מעלינו, לא מחליפים כיוון/לא זזים ---
         if (Mathf.Abs(dx) < stopDistanceX)
         {
             ApplyVelocity(0f);
@@ -45,10 +56,8 @@ public class EnemyFollow : MonoBehaviour
             return;
         }
 
-        // קבע כיוון (ימין/שמאל) לפי dx
         int sign = dx > 0f ? 1 : -1;
 
-        // עצירה מול קיר/מדרגה באמצעות Raycast מה-wallCheck
         bool wallAhead = false;
         if (wallCheck)
         {
@@ -60,14 +69,27 @@ public class EnemyFollow : MonoBehaviour
 
         float vxCmd = wallAhead ? 0f : sign * speed;
 
-        // תנועה בפועל
         ApplyVelocity(vxCmd);
-
-        // הפניית ספרייט + אנימציה
         UpdateFacingAndAnimation(vxCmd);
     }
 
-    // === Helpers ===
+    bool IsPlayerAlive()
+    {
+        if (!player || !player.gameObject.activeInHierarchy) return false;
+
+        var pm = player.GetComponent<PlayerMovement>();
+        if (pm && !pm.enabled) return false;
+
+        return true;
+    }
+
+    public void OnPlayerDied()
+    {
+        ApplyVelocity(0f);
+        UpdateFacingAndAnimation(0f);
+        enabled = true;
+    }
+
     void ApplyVelocity(float vxCmd)
     {
         if (rb && rb.bodyType == RigidbodyType2D.Dynamic)
@@ -82,23 +104,21 @@ public class EnemyFollow : MonoBehaviour
 
     void UpdateFacingAndAnimation(float vxCmd)
     {
-        // הפניית הספרייט לפי כיוון התנועה
-        if (Mathf.Abs(vxCmd) > 0.01f)
+        if (Mathf.Abs(vxCmd) > minCommandEpsilon)
         {
             var s = transform.localScale;
             s.x = Mathf.Abs(baseScale.x) * (vxCmd >= 0f ? 1f : -1f);
             transform.localScale = s;
         }
 
-        // מהירות בפועל (לצרכי אנימציה)
         float vxActual = rb && rb.bodyType == RigidbodyType2D.Dynamic
             ? rb.linearVelocity.x
             : (transform.position.x - lastX) / Time.fixedDeltaTime;
 
         if (animator)
         {
-            animator.SetFloat("Speed", Mathf.Abs(vxActual), 0.1f, Time.fixedDeltaTime);
-            animator.SetBool("isMoving", Mathf.Abs(vxActual) > 0.05f);
+            animator.SetFloat("Speed", Mathf.Abs(vxActual), animDamp, Time.fixedDeltaTime);
+            animator.SetBool("isMoving", Mathf.Abs(vxActual) > movingThreshold);
         }
 
         lastX = transform.position.x;
