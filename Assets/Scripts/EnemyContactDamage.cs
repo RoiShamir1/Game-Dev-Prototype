@@ -5,12 +5,11 @@ public class EnemyContactDamage : MonoBehaviour
     public enum Mode { Hits, TimeInContact }
     public Mode mode = Mode.Hits;
 
-    [Header("General")]
     public string playerTag = "Player";
 
     [Header("Hits mode")]
     public int damagePerHit = 1;
-    public float hitCooldown = 0.5f;
+    public float hitCooldown = 0.6f;
 
     [Header("TimeInContact mode")]
     public float killAfterSeconds = 3f;
@@ -18,50 +17,59 @@ public class EnemyContactDamage : MonoBehaviour
     private float lastHitTime = -999f;
     private float contactTime = 0f;
 
-    void Reset()
+    void OnTriggerEnter2D(Collider2D other)  { HandleEnter(other); }
+    void OnTriggerStay2D(Collider2D other)   { HandleStay(other); }
+    void OnTriggerExit2D(Collider2D other)   { HandleExit(other); }
+
+    void OnCollisionEnter2D(Collision2D c)   { HandleEnter(c.collider); }
+    void OnCollisionStay2D(Collision2D c)    { HandleStay(c.collider); }
+    void OnCollisionExit2D(Collision2D c)    { HandleExit(c.collider); }
+
+    void HandleEnter(Collider2D other)
     {
-        var col = GetComponent<Collider2D>();
-        if (col) col.isTrigger = true;
+        if (!other.CompareTag(playerTag)) return;
+        contactTime = 0f;
+        if (mode == Mode.Hits) TryHit(other);
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    void HandleStay(Collider2D other)
     {
         if (!other.CompareTag(playerTag)) return;
 
         if (mode == Mode.Hits)
         {
-            TryHit(other.GetComponent<Health>());
+            TryHit(other);
         }
-
-        contactTime = 0f;
-    }
-
-    void OnTriggerStay2D(Collider2D other)
-    {
-        if (!other.CompareTag(playerTag)) return;
-
-        if (mode == Mode.TimeInContact)
+        else
         {
+            var h = other.GetComponentInParent<Health>();
+            if (h == null) return;
+
             contactTime += Time.deltaTime;
-            if (contactTime >= killAfterSeconds)
+
+            float step = killAfterSeconds / Mathf.Max(1, h.maxHealth);
+            if (contactTime >= step)
             {
-                var h = other.GetComponent<Health>();
-                if (h) h.Kill();
                 contactTime = 0f;
+                bool died = h.ApplyDamage(1);
+                if (died) contactTime = 0f;
             }
         }
     }
 
-    void OnTriggerExit2D(Collider2D other)
+    void HandleExit(Collider2D other)
     {
-        if (other.CompareTag(playerTag)) contactTime = 0f;
+        if (!other.CompareTag(playerTag)) return;
+        contactTime = 0f;
     }
 
-    private void TryHit(Health h)
+    void TryHit(Collider2D other)
     {
+        var h = other.GetComponentInParent<Health>();
         if (h == null) return;
         if (Time.time - lastHitTime < hitCooldown) return;
+
         lastHitTime = Time.time;
-        h.TakeDamage(damagePerHit);
+        h.ApplyDamage(damagePerHit);
     }
 }

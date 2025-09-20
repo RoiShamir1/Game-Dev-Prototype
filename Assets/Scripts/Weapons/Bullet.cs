@@ -12,7 +12,7 @@ public class Bullet : MonoBehaviour
 
     [Header("Debug")]
     public bool enableDebug = true;
-    public bool destroyOnNonEnemyTrigger = false; // אם true - הורס גם כשהכדור פוגע בטריגר לא-אויב
+    public bool destroyOnNonEnemyTrigger = false;
 
     private int enemyLayer = -1;
     private Rigidbody2D rb;
@@ -23,7 +23,7 @@ public class Bullet : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
 
         if (rb != null)
-            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous; // חשוב לכדורים מהירים
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
     }
 
     void OnEnable()
@@ -44,10 +44,8 @@ public class Bullet : MonoBehaviour
     {
         ProcessHit(other, "OnTriggerEnter2D");
 
-        // ברירת מחדל: כמו שהיה אצלך - לא הורס אם זה לא אויב
         if (destroyOnNonEnemyTrigger == false) return;
 
-        // אם רוצים להרוס בכל מקרה גם כשזה לא אויב:
         if (enemyLayer == -1 || other.gameObject.layer != enemyLayer)
             Destroy(gameObject);
     }
@@ -88,7 +86,6 @@ public class Bullet : MonoBehaviour
             return;
         }
 
-        // מצא Health גם אם הוא על ההורה (קוליידר יכול להיות על ילד)
         var health = col.GetComponentInParent<Health>();
         if (health == null)
         {
