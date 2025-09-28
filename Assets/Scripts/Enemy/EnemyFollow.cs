@@ -90,37 +90,36 @@ public class EnemyFollow : MonoBehaviour
         enabled = true;
     }
 
-    void ApplyVelocity(float vxCmd)
+    void ApplyVelocity(float move)
     {
         if (rb && rb.bodyType == RigidbodyType2D.Dynamic)
         {
-            rb.linearVelocity = new Vector2(vxCmd, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(move, rb.linearVelocity.y);
         }
         else
         {
-            transform.position += new Vector3(vxCmd * Time.fixedDeltaTime, 0f, 0f);
+            transform.position += new Vector3(move * Time.fixedDeltaTime, 0f, 0f);
         }
     }
 
-    void UpdateFacingAndAnimation(float vxCmd)
+    void UpdateFacingAndAnimation(float move)
     {
-        if (Mathf.Abs(vxCmd) > minCommandEpsilon)
+        if (Mathf.Abs(move) > minCommandEpsilon)
         {
             var s = transform.localScale;
-            s.x = Mathf.Abs(baseScale.x) * (vxCmd >= 0f ? 1f : -1f);
+            s.x = Mathf.Abs(baseScale.x) * (move >= 0f ? 1f : -1f);
             transform.localScale = s;
         }
 
-        float vxActual = rb && rb.bodyType == RigidbodyType2D.Dynamic
+        float actual = rb && rb.bodyType == RigidbodyType2D.Dynamic
             ? rb.linearVelocity.x
             : (transform.position.x - lastX) / Time.fixedDeltaTime;
 
         if (animator)
         {
-            animator.SetFloat("Speed", Mathf.Abs(vxActual), animDamp, Time.fixedDeltaTime);
-            animator.SetBool("isMoving", Mathf.Abs(vxActual) > movingThreshold);
+            animator.SetFloat("Speed", Mathf.Abs(actual), animDamp, Time.fixedDeltaTime);
+            animator.SetBool("isMoving", Mathf.Abs(actual) > movingThreshold);
         }
-
         lastX = transform.position.x;
     }
 
